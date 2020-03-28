@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}
+<style>
+	body{
+		margin: 0;
+		padding: 0;
+		background-image: url('/static/login1.jpg/');
+		background-size: cover;
+	}
+	.main-container{
+		margin-top: 90px;
+	}
+	.loginForm{
+		width: auto;
+		opacity: 0.8;
+		padding: 40px 60px;
+		background: #191919;
+		text-align: center;
+	}
+	.loginForm h1{
+		color: #f1f1f1;
+		text-transform: uppercase;
+		font-weight: 500;
+	}
+	.loginForm input[type='text'],input[type='password']{
+		border: 0;
+		width: 200px;
+		background: none;
+		display: block;
+		margin: 20px auto;
+		text-align: center;
+		border: 2px solid #00d2d3;
+		padding: 14px 10px;
+		outline: none;
+		color: #f1f1f1;
+		border-radius: 24px;
+		transition: 0.25s; 
+	}
+	.loginForm input[type='text']:focus,input[type='password']:focus{
+		outline: none;
+		background: none;
+		color: #f1f1f1;
+		border-color: #d35400;
+		width: 280px;
+	}
+	.loginForm input[type='submit']{
+		border: 0;
+		background: none;
+		display: block;
+		margin: 20px auto;
+		text-align: center;
+		border: 2px solid #8e44ad;
+		padding: 10px 40px;
+		outline: none;
+		color: #f1f1f1;
+		border-radius: 24px;
+		transition: 0.25s;
+		cursor: pointer;
+	}
+	.loginForm input[type='submit']:hover{
+		background-color: #8e44ad;
+	}
+	.loginForm input[type='submit']:focus{
+		outline: none;
+	}
+	.loginForm input[type='submit']:active{
+		transform: scale(0.95);
+	}
+	.loginForm a{
+		text-decoration: none;
+		color: #bdc3c7;
+		cursor: pointer;
+	}
+</style>
+
+{% endblock %}
+{% block content %}
+{% load crispy_forms_tags %}
+<br>
+
+<div class="main-container fullscreen">
+	<div class="container">
+		<div class="row justify-content-center">
+			<div class="col-xl-5 col-lg-6 col-md-7">
+				<div class="text-center">
+					<form class='loginForm' method='POST'>
+						<h1>Sign In</h1>
+						{% csrf_token %}
+						{{form|crispy}}
+						<input type='submit' value='Login'>
+						<a href="{% url 'password-reset' %}">  Forgot Password?</a>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}

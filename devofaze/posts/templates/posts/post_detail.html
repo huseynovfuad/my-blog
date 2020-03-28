@@ -1,0 +1,513 @@
+{% extends 'base.html' %}
+{% block title %}
+
+
+<style>
+  textarea.form-control{
+    border: 6px solid rgba(0,0,0,0.1);
+    border-radius: 5px;
+    outline: 0;
+    height: 160px;
+  }
+  .media-list .media img {
+    width:64px;
+    height:64px;
+    border:2px solid #e5e7e8;
+}
+
+  .media-list .media {
+    margin-bottom:25px;
+}
+.media-list .media .media-body small.text-muted{
+    margin-left: 10px;
+  }
+.media-list .media .media-body .comment-section{
+    margin-top: 20px;
+  }
+  .media-list .media a img{
+    margin-right: 15px;
+  }
+  #profil_picture{
+    width:64px;
+    height:64px;
+    border:2px solid #e5e7e8;
+  }
+  @media only screen and (max-width: 600px) {
+  .col-4{
+    display: none;
+  }
+}
+</style>
+{% endblock %}
+{% block content %}
+
+
+<div class='row' style="margin-top: 30px;">
+
+
+
+  <div class="col">
+    <div class='title'>
+      <h2 style="text-align: center;">{{post.title}}</h2>
+    </div><hr>
+    <div class='header'>
+      <a class='pull-left'>
+        <img src='{{post.author.profile.get_image_or_default}}' class='rounded-circle' id='profil_picture'>
+      </a>
+      <strong class='text-primary' style="margin-left: 10px;">{{post.author.get_full_name}}</strong>
+    </div>
+    {% if post.draft == True %}
+      <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-dark'></i>  Last Update | {{post.updated_at|timesince}}</small>
+    {% else %}
+      <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-muted'></i>  {{post.created_at|timesince}}</small>
+    {% endif %}
+    <br>
+    {% if request.user != post.author %}
+    <form id='followForm' method='POST' action='{% url "add-or-delete-follow" %}'>
+      {% csrf_token %}
+      <input type='hidden' name='followed' value='{{post.author.username}}'>
+      <input type='hidden' name='follower' value='{{request.user.username}}'>
+      <input id='followSubmit' style='margin-left: 5px;' type='submit' class='btn btn-success' value='{% if isFollow %}UN{% endif %}FOLLOW'>
+    </form>
+    {% endif %}
+    <hr>
+    {% if post.image %}
+      <img src='{{post.image.url}}' class='card-img' style="height: 250px;"><br>
+    {% endif %}
+    {% if request.user == post.author %}
+    <br>
+      <div style="float:right;">
+        <a class='text-info' href='{% url "post-edit" post.slug %}' style="margin-right: 8px;"><i class="fas fa-pen"></i></a>  
+        <a href='{% url "post-delete2" post.slug %}' style="color:#e67e22;cursor:pointer;"><i class="fas fa-trash-alt"></i></a>        
+      </div>
+    {% endif %}
+    <div class='content'>
+      <p>{{post.content|safe}}</p>
+    </div>
+    <div class='card-footer bg-dark text-muted'>
+      <a onClick="bookmarkPost({{post.id}})" style="cursor: pointer;">
+      {% if request.user in post.bookmark.all %}
+          <i id='bookmark-{{post.id}}' class="fas fa-bookmark" style='color: #48dbfb'></i>
+      {% else %}
+          <i id='bookmark-{{post.id}}' class="fas fa-bookmark" style='color: #95a5a6'></i>
+      {% endif %}
+      </a>
+      <div style="float: right;">
+        <a  id='postBtn-like' onClick="likePost({{post.id}})" style="cursor: pointer;margin-right: 5px;">
+          {% if request.user in post.likes.all %}
+            <i id='like-{{post.id}}' class="fas fa-heart" style="color: #EA2027;"></i> 
+          {% else %}
+            <i id='like-{{post.id}}' class="fas fa-heart" style="color: #95a5a6;"></i>
+          {% endif %}
+          <b><span id='like-count-{{post.id}}'>{{post.total_likes}}</span></b>
+        </a>
+        <a  id='postBtn-unlike' onClick="unlikePost({{post.id}})" style="cursor: pointer;">
+          {% if request.user in post.unlikes.all %}
+            <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #EA2027;"></i> 
+          {% else %}
+            <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #95a5a6;"></i>
+          {% endif %}
+          <b><span id='unlike-count-{{post.id}}'>{{post.total_unlikes}}</span></b>
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <div class='col-4' style="text-align: center;">
+    {% if related_posts %}
+    <h3>Related Topics</h3>
+    <br>
+    {% for relpost in related_posts %}
+      <h5><a href='{% url "post-detail" relpost.slug %}'>{{relpost.title}}</a></h5>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+
+
+  
+</div>
+<br>
+
+
+
+<!--    Comment Section!!!    -->
+
+<h2 id='commentCount'>Comments {% if comments %} ({{comments|length}})  {% endif %}</h2>
+<br>
+<form id='createComment'>
+  {% csrf_token %}
+  {{create_form.commentary}}<br>
+  <input type='hidden' name='post_slug' value='{{post.slug}}' id='postSlug'>
+  <input type='submit' class='btn btn-info' value='Add'>
+</form>
+
+
+
+<div class='table'>
+{% for comment in comments %}
+
+<div id='comment-{{comment.id}}'><hr>
+  <ul class="media-list">
+    <li class="media">
+        <a href="#" class="pull-left">
+            <img src="{{comment.owner.profile.photo.get_image_or_default}}" alt="" class="rounded-circle">
+        </a>
+        <div class="media-body">
+            <span class="text-muted pull-right">
+                {% if request.user == comment.owner %}
+                <a class='text-info' onClick='updateComment({{comment.id}})' style="margin-right: 8px;"><i class="fas fa-pen"></i></a>
+                {% endif %}
+                {% if request.user == post.author or request.user == comment.owner %}
+                <a onClick="deleteComment({{comment.id}})" style="color:#e67e22;cursor:pointer;"><i class="fas fa-trash-alt"></i></a>
+                {% endif %} 
+            </span>
+            
+            <strong class="text-success">{{comment.owner.get_full_name}}</strong>
+            <small class="text-muted"><i class="fas fa-circle" style="color:#636e72;"></i>   {{comment.created_at|timesince}} ago</small><br><br>
+            <p class='comment-section-{{comment.id}}'>
+                {{comment.commentary}}
+            </p>
+            <span class="text-muted pull-right">
+              <a  id='commentBtn-like' onClick="likeComment({{comment.id}})"  style="cursor: pointer;margin-right: 7px;">
+                {% if request.user in comment.likes.all %}
+                  <i id='comment-like-{{comment.id}}' class="fas fa-thumbs-up" style="font-size: 18px;color: #3498db"></i> 
+                {% else %}
+                  <i id='comment-like-{{comment.id}}' class="fas fa-thumbs-up" style="font-size: 18px;color: #95a5a6;"></i>
+                {% endif %}
+                <b><span id='comment-like-count-{{comment.id}}'>{{comment.total_likes}}</span></b>
+              </a>
+              <a  id='commentBtn-unlike' onClick="unlikeComment({{comment.id}})"  style="cursor: pointer;">
+                {% if request.user in comment.unlikes.all %}
+                  <i id='comment-unlike-{{comment.id}}' class="fas fa-thumbs-down" style="font-size: 18px;color: #3498db"></i> 
+                {% else %}
+                  <i id='comment-unlike-{{comment.id}}' class="fas fa-thumbs-down" style="font-size: 18px;color: #95a5a6;"></i>
+                {% endif %}
+                <b><span id='comment-unlike-count-{{comment.id}}'>{{comment.total_unlikes}}</span></b>
+              </a>
+            </span>
+            <span id='commentUpdateForm-{{comment.id}}' class='commenT' style="display: none;"><br><br>
+              <form id='updateText' action='{% url "comment-edit" %}'>
+                {% csrf_token %}
+                <textarea class='form-control' id='updateCommentary'></textarea><br>
+                <input type='hidden' name='commentId' value='{{comment.id}}' id='commentId'>
+                <span class='pull-right'>
+                  <a onClick='undo({{comment.id}})' class='btn btn-info text-light'>Undo</a>
+                  <a onClick='submitForm({{comment.id}})' class='btn btn-success text-light'>Change</a>
+                </span>
+              </form>
+            </span>
+        </div>
+    </li>
+  </ul>
+</div>
+
+{% endfor %}
+</div>
+
+
+
+
+
+{% endblock %}
+{% block javascript %}
+
+<script>
+
+function deleteComment(id) {
+        $.ajax({
+            url: '{% url "comment-delete" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.deleted) {
+                $("#comment-" + id).remove();
+                $("#commentCount").text('Comments ('+ data.count +')');
+                }
+            }
+        });
+    }
+
+    function likeComment(id) {
+        $.ajax({
+            url: '{% url "comment-like" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('Like')
+                    $("#comment-like-"+id).css('color','#3498db')
+                    $("#comment-like-count-"+id).text(data.likes_count)
+                    $("#comment-unlike-count-"+id).text(data.unlikes_count)
+                    $("#comment-unlike-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#comment-like-"+id).css('color','#95a5a6')
+                    $("#comment-like-count-"+id).text(data.likes_count)
+                }
+            }
+        });
+    }
+
+    function unlikeComment(id) {
+        $.ajax({
+            url: '{% url "comment-unlike" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('Unlike')
+                    $("#comment-like-"+id).css('color','#95a5a6')
+                    $("#comment-like-count-"+id).text(data.likes_count)
+                    $("#comment-unlike-count-"+id).text(data.unlikes_count)
+                    $("#comment-unlike-"+id).css('color','#3498db')
+                }
+                else{
+                    console.log("Zero")
+                    $("#comment-unlike-count-"+id).text(data.unlikes_count)
+                    $("#comment-unlike-"+id).css('color','#95a5a6')
+                }
+            }
+        });
+    }
+
+    function deletePost(id) {
+        $.ajax({
+            url: '{% url "post-delete" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.deleted) {
+                $("#post-" + id).remove();
+                }
+            }
+        });
+    }
+
+    function likePost(id) {
+        $.ajax({
+            url: '{% url "post-like" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('Like')
+                    $("#like-"+id).css('color','#EA2027')
+                    $("#like-count-"+id).text(data.likes_count)
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                    $("#unlike-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#like-"+id).css('color','#95a5a6')
+                    $("#like-count-"+id).text(data.likes_count)
+                }
+            }
+        });
+    }
+
+    function unlikePost(id) {
+        $.ajax({
+            url: '{% url "post-unlike" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('UnLike')
+                    $("#unlike-"+id).css('color','#EA2027')
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                    $("#like-count-"+id).text(data.likes_count)
+                    $("#like-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#unlike-"+id).css('color','#95a5a6')
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                }
+            }
+        });
+    }
+
+    function bookmarkPost(id){
+        $.ajax({
+            url: '{% url "post-bookmark" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.bookmarked) {
+                    $("#bookmark-" + id).css('color','#48dbfb',);
+                }
+                else{
+                    $("#bookmark-" + id).css('color','#95a5a6');
+                }
+            }
+        });
+    }
+
+    $("#createComment").submit(function(e){
+      e.preventDefault();
+      var commentary = $("#id_commentary").val().trim()
+      var post_slug = $('#postSlug').val().trim()
+      $.ajax({
+        url : "{% url 'comment-create' %}",
+        type: "POST",
+        data:{
+          'post_slug':post_slug,
+          'commentary':commentary,
+          csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val(),
+        },
+        success: function(data){
+          console.log('Yesss')
+          console.log(data.commentary)
+          $("#commentCount").text('Comments ('+ data.count +')');
+          appendToCommentTable(data);
+        }
+      });
+      $('#createComment').trigger("reset");
+    })
+
+    function appendToCommentTable(data){
+      $('.table').prepend(`
+      <div id='comment-${data.id}'><hr>
+  <ul class="media-list">
+    <li class="media">
+        <a href="#" class="pull-left">
+            <img src="${data.image_url}" alt="" class="rounded-circle">
+        </a>
+        <div class="media-body">
+            <span class="text-muted pull-right">
+                <a class='text-info' onClick='updateComment(${data.id})' style="margin-right: 8px;"><i class="fas fa-pen"></i></a>
+                <a onClick="deleteComment(${data.id})" style="color:#e67e22;cursor:pointer;"><i class="fas fa-trash-alt"></i></a>
+            </span>
+            
+            <strong class="text-success">${data.user}</strong>
+            <small class="text-muted"><i class="fas fa-circle" style="color:#636e72;"></i>   ${data.timesince} ago</small><br><br>
+            <p class='comment-section-${data.id}'>
+                ${data.commentary}
+            </p>
+            <span class="text-muted pull-right">
+              <a  id='commentBtn-like' onClick="likeComment(${data.id})"  style="cursor: pointer;margin-right: 7px;">
+                {% if request.user in comment.likes.all %}
+                  <i id='comment-like-${data.id}' class="fas fa-thumbs-up" style="font-size: 18px;color: #3498db"></i> 
+                {% else %}
+                  <i id='comment-like-${data.id}' class="fas fa-thumbs-up" style="font-size: 18px;color: #95a5a6;"></i>
+                {% endif %}
+                <b><span id='comment-like-count-${data.id}'>${data.total_likes}</span></b>
+              </a>
+              <a  id='commentBtn-unlike' onClick="unlikeComment(${data.id})"  style="cursor: pointer;">
+                {% if request.user in comment.unlikes.all %}
+                  <i id='comment-unlike-${data.id}' class="fas fa-thumbs-down" style="font-size: 18px;color: #3498db"></i> 
+                {% else %}
+                  <i id='comment-unlike-${data.id}' class="fas fa-thumbs-down" style="font-size: 18px;color: #95a5a6;"></i>
+                {% endif %}
+                <b><span id='comment-unlike-count-${data.id}'>${data.total_unlikes}</span></b>
+              </a>
+            </span><br><br>
+            <span id='commentUpdateForm-${data.id}' class='commenT' style="display: none;">
+              <form id='updateText'>
+                {% csrf_token %}
+                <textarea class='form-control' id='updateCommentary'></textarea><br>
+                <input type='hidden' name='commentId' value='${data.id}' id='commentId'>
+                <span class='pull-right'>
+                  <a onClick='undo(${data.id})' class='btn btn-info text-light'>Undo</a>
+                  <a onClick='submitForm(${data.id})' class='btn btn-success text-light'>Change</a>
+                </span>
+              </form>
+            </span>
+        </div>
+    </li>
+  </ul>
+</div>
+    `);
+    }
+
+    function submitForm(id) {
+    var textInput = $('#commentUpdateForm-' + id).children('form').children('textarea#updateCommentary').val().trim();
+    console.log(textInput)
+    if (textInput) {
+        // Create Ajax Call
+        $.ajax({
+            url: '{% url "comment-edit" %}',
+            data: {
+                'id': id,
+                'text': textInput,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.info) {
+                  updateToTableEdit(data.info);
+                }
+            }
+        });
+       } else {
+        alert("All fields must have a valid value.");
+    }
+    $('form#updateText').trigger("reset");
+    $('#commentUpdateForm-' + id).hide();
+    return false;
+};
+
+    function updateComment(id){
+      $('.commenT').hide()
+      $('#commentUpdateForm-' + id).show()
+      text_ = $('.comment-section-'+id).text().trim()
+      $('#commentUpdateForm-' + id).children('form').children('textarea#updateCommentary').val(text_)
+    }
+
+    function updateToTableEdit(info){
+      $('.comment-section-'+ info.id).text(info.text)
+  }
+
+
+
+
+    function undo(id){
+      $('#commentUpdateForm-' + id).hide()
+      $('#commentUpdateForm-' + id).children('form').trigger('reset')
+    }
+
+
+
+    $("#followForm").submit(function(e){
+        e.preventDefault();
+        var this_form = $(this);
+        var formUrl = this_form.attr('action')
+        var formMethod = this_form.attr('method')
+        var formData = this_form.serialize()
+        $.ajax({
+            url : formUrl,
+            method : formMethod,
+            type : 'json',
+            data : formData,
+            success: function(data){
+                $("#followSubmit").val(data.msg)
+            }
+        })
+    })
+
+</script>
+{% endblock %}
+
+

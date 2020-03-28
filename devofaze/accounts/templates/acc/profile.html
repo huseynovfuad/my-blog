@@ -1,0 +1,431 @@
+{% extends 'base.html' %}
+{% block title %}
+<style>
+    #profil_picture{
+    width:64px;
+    height:64px;
+    border:2px solid #e5e7e8;
+  }
+  .col ul.nav .nav-item a{
+      cursor: pointer;
+      margin: 0 17px;
+  }
+  .col ul.nav .nav-item a:hover{
+      border-bottom: 2px solid #95a5a6;
+  }
+  .active{
+      border-bottom: 2px solid #e84118;
+  }
+  .tabcontent{
+      display: none;
+  }
+  .divider{
+      padding: 20px 0;
+      border-bottom: 1px solid #bdc3c7;
+  }
+  @media only screen and (max-width: 767px) {
+  #main-row{
+    display: block;
+  }
+  .col{
+      margin-top: 40px;
+  }
+}
+</style>
+{% endblock %}
+{% block content %}
+{% load follow %}
+<br><br>
+
+<div id='main-row' class='row'>
+    <div class='col-5'>
+        <img src='{{user.profile.get_image_or_default}}' style="width: 250px;height: 250px;"><br><br>
+            <h5 class='text-success'>{{user.get_full_name}}</h5>
+            {% if user != request.user %}
+            <form class='followForm' method='POST' action='{% url "add-or-delete-follow" %}'>
+                {% csrf_token %}
+                <input type='hidden' name='followed' value='{{user.username}}'>
+                <input type='hidden' name='follower' value='{{request.user.username}}'>
+                <input class='followSubmit' style='margin-left: 5px;' type='submit' class='btn btn-success' value='{{request.user|status:user}}'>
+            </form>
+            {% endif %}
+        {% if user.profile.date_of_birth %}
+            <p><i class="fas fa-birthday-cake"></i>  {{user.profile.date_of_birth}}</p>
+        {% endif %}
+        {% if user.profile.bio %}
+            <strong>Bio:</strong>
+            <p>{{user.profile.bio}}</p>
+        {% endif %}
+        {% if request.user == user %}
+            <a class='btn btn-primary text-light' style="width: 250px;" href='{% url "profile-edit" request.user.username %}'>Edit Profile</a>
+        {% endif %}
+        <hr>
+    </div>
+    <div class='col'>
+        <ul class="nav">
+            <li class="nav-item">
+              <a class="navlink" id="defaultOpen" onclick="openTab(event, 'Posts')">Posts <span>({{posts_count}})</span></a>
+            </li>
+            <li class="nav-item">
+              <a class="navlink" onclick="openTab(event, 'Bookmarkeds')">Bookmarkeds <span>({{bookmarkeds_count}})</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="navlink" onclick="openTab(event, 'Followings')">Followings <span id='followings-count'>({{followings_count}})</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="navlink" onclick="openTab(event, 'Followers')">Followers <span>({{followers_count}})</span></a>
+            </li>
+        </ul><hr>
+        <div id='Posts' class='tabcontent'>
+            {% for post in user.author.all %}
+            <div id="post-{{post.id}}" class="card bg-light mb-3" style="max-width: 38rem;">
+                <div class="card-header">
+                    <div class='header'>
+                        <a class='pull-left'>
+                          <img src='{{post.author.profile.get_image_or_default}}' class='rounded-circle' id='profil_picture'>
+                        </a>
+                        <strong class='text-primary' style="margin-left: 10px;">{{post.author.get_full_name}}</strong>
+                      </div>
+                      {% if post.draft == True %}
+                        <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-dark'></i>  Last Update | {{post.updated_at|timesince}}</small>
+                      {% else %}
+                        <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-muted'></i>  {{post.created_at|timesince}} ago</small>
+                      {% endif %}
+                </div>
+                <div class="card-body">
+                        <h5 style='float:left;' class="card-title">{{post.title}}</h5>
+                        {% if request.user == post.author %}
+                        <div style="float:right;">
+                            <a class='text-info' href='{% url "post-edit" post.slug %}' style="margin-right: 8px;"><i class="fas fa-pen"></i></a>  
+                            <a onClick="deletePost({{post.id}})" style="color:#e67e22;cursor:pointer;"><i class="fas fa-trash-alt"></i></a>        
+                        </div>
+                        
+                        {% endif %}<br><hr>
+                        <a href='{% url "post-detail" post.slug %}' style='text-decoration: none;color:black;'>
+                        {% if post.image %}
+                            <center><img src="{{post.image.url}}" class='card-img' style="height: 200px;"></center>
+                        {% endif %}
+                            <p class="card-text">{{post.snipped_body|safe}}</p>
+                         </a>
+                </div>
+                <div class="card-footer">
+                    <a onClick="bookmarkPost({{post.id}})" style="color:black;cursor: pointer;">
+                    {% if request.user in post.bookmark.all %}
+                        <i id='bookmark-{{post.id}}' class="fas fa-bookmark"></i>
+                    {% else %}
+                        <i id='bookmark-{{post.id}}' class="far fa-bookmark"></i>
+                    {% endif %}
+                    </a>
+                    <div id='post-like-{{post.id}}' style="float: right;">
+                        <a style="margin-right: 7px;"><i class="far fa-eye"></i>  <strong>{{post.total_reads}}</strong></a>
+                        <a  id='postBtn-like' onClick="likePost({{post.id}})" style="cursor: pointer;margin-right: 5px;">
+                            {% if request.user in post.likes.all %}
+                              <i id='like-{{post.id}}' class="fas fa-heart" style="color: #EA2027;"></i> 
+                            {% else %}
+                              <i id='like-{{post.id}}' class="fas fa-heart" style="color: #95a5a6;"></i>
+                            {% endif %}
+                            <b><span id='like-count-{{post.id}}'>{{post.total_likes}}</span></b>
+                          </a>
+                          <a  id='postBtn-unlike' onClick="unlikePost({{post.id}})" style="cursor: pointer;">
+                            {% if request.user in post.unlikes.all %}
+                              <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #EA2027;"></i> 
+                            {% else %}
+                              <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #95a5a6;"></i>
+                            {% endif %}
+                            <b><span id='unlike-count-{{post.id}}'>{{post.total_unlikes}}</span></b>
+                          </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div id='Bookmarkeds' class='tabcontent'>
+            {% for post in user.bookmark.all %}
+            <div id="post-{{post.id}}" class="card bg-light mb-3" style="max-width: 38rem;">
+                <div class="card-header">
+                    <div class='header'>
+                        <a class='pull-left'>
+                          <img src='{{post.author.profile.get_image_or_default}}' class='rounded-circle' id='profil_picture'>
+                        </a>
+                        <strong class='text-primary' style="margin-left: 10px;">{{post.author.get_full_name}}</strong>
+                      </div>
+                      {% if post.draft == True %}
+                        <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-dark'></i>  Last Update | {{post.updated_at|timesince}}</small>
+                      {% else %}
+                        <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-muted'></i>  {{post.created_at|timesince}} ago</small>
+                      {% endif %}
+                </div>
+                <div class="card-body">
+                        <h5 style='float:left;' class="card-title">{{post.title}}</h5>
+                        {% if request.user == post.author %}
+                        <div style="float:right;">
+                            <a class='text-info' href='{% url "post-edit" post.slug %}' style="margin-right: 8px;"><i class="fas fa-pen"></i></a>  
+                            <a onClick="deletePost({{post.id}})" style="color:#e67e22;cursor:pointer;"><i class="fas fa-trash-alt"></i></a>        
+                        </div>
+                        
+                        {% endif %}<br><hr>
+                        <a href='{% url "post-detail" post.slug %}' style='text-decoration: none;color:black;'>
+                        {% if post.image %}
+                            <center><img src="{{post.image.url}}" class='card-img' style="height: 200px;"></center>
+                        {% endif %}
+                            <p class="card-text">{{post.snipped_body|safe}}</p>
+                         </a>
+                </div>
+                <div class="card-footer">
+                    <a onClick="bookmarkPost({{post.id}})" style="color:black;cursor: pointer;">
+                    {% if request.user in post.bookmark.all %}
+                        <i id='bookmark-{{post.id}}' class="fas fa-bookmark"></i>
+                    {% else %}
+                        <i id='bookmark-{{post.id}}' class="far fa-bookmark"></i>
+                    {% endif %}
+                    </a>
+                    <div id='post-like-{{post.id}}' style="float: right;">
+                        <a style="margin-right: 7px;"><i class="far fa-eye"></i>  <strong>{{post.total_reads}}</strong></a>
+                        <a  id='postBtn-like' onClick="likePost({{post.id}})" style="cursor: pointer;margin-right: 5px;">
+                            {% if request.user in post.likes.all %}
+                              <i id='like-{{post.id}}' class="fas fa-heart" style="color: #EA2027;"></i> 
+                            {% else %}
+                              <i id='like-{{post.id}}' class="fas fa-heart" style="color: #95a5a6;"></i>
+                            {% endif %}
+                            <b><span id='like-count-{{post.id}}'>{{post.total_likes}}</span></b>
+                          </a>
+                          <a  id='postBtn-unlike' onClick="unlikePost({{post.id}})" style="cursor: pointer;">
+                            {% if request.user in post.unlikes.all %}
+                              <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #EA2027;"></i> 
+                            {% else %}
+                              <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #95a5a6;"></i>
+                            {% endif %}
+                            <b><span id='unlike-count-{{post.id}}'>{{post.total_unlikes}}</span></b>
+                          </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div id='Followings' class='tabcontent'>
+            {% for following in followings %}
+            <div id='helpDiv-{{following.followed.username}}'>
+            <div class='row' id='followings-{{following.followed.username}}'>
+                <div class='col-2'>
+                    <img src='{{following.followed.profile.get_image_or_default}}' class='card-img'>
+                </div>
+                <div class='col-8'>
+                    <div class='row'>
+                        <strong>{{following.followed.get_full_name}}</strong>
+                        <p class='text-muted' style="margin-left: 6px;">{{following.followed.username}}</p>
+                    </div>
+                </div>
+                {% if request.user != following.followed %}
+                <div class='col-2'>
+                    <form class='followForm' method='POST' action='{% url "add-or-delete-follow" %}'>
+                        {% csrf_token %}
+                        <input type='hidden' name='profilOwner' value='{{user.username}}'>
+                        <input type='hidden' name='followed' value='{{following.followed.username}}'>
+                        <input type='hidden' name='follower' value='{{request.user.username}}'>
+                        <input class='followSubmit' style='margin-left: 5px;' type='submit' class='btn btn-success' value='{{request.user|status:following.followed}}'>
+                    </form>
+                </div>
+                {% endif %}
+            </div><hr></div>
+            {% endfor %}
+        </div>
+        <div id='Followers' class='tabcontent'>
+            {% for follower in followers %}
+            <div class='row' id='followers-{{follower.follower.username}}'>
+                <div class='col-2'>
+                    <img src='{{follower.follower.profile.get_image_or_default}}' class='card-img'>
+                </div>
+                <div class='col-8'>
+                    <div class='row'>
+                        <strong>{{follower.follower.get_full_name}}</strong>
+                        <p class='text-muted' style="margin-left: 6px;">{{follower.follower.username}}</p>
+                    </div>
+                </div>
+                {% if request.user !=  follower.follower %}
+                <div class='col-2'>
+                    <form class='followForm' method='POST' action='{% url "add-or-delete-follow" %}'>
+                        {% csrf_token %}
+                        <input type='hidden' name='profilOwner' value='{{user.username}}'>
+                        <input type='hidden' name='followed' value='{{follower.follower.username}}'>
+                        <input type='hidden' name='follower' value='{{request.user.username}}'>
+                        <input  class='followSubmit' style='margin-left: 5px;' type='submit' class='btn btn-success' value='{{request.user|status:follower.follower}}'>
+                    </form>
+                </div>
+                {% endif %}
+            </div><br><hr>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<br><br>
+{% endblock %}
+
+{% block javascript %}
+<script>
+    function deletePost(id) {
+        $.ajax({
+            url: '{% url "post-delete" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.deleted) {
+                $('.tabcontent').children("#post-" + id).remove();
+                }
+            }
+        });
+    }
+
+
+    function likePost(id) {
+        $.ajax({
+            url: '{% url "post-like" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('Like')
+                    $("#like-"+id).css('color','#EA2027')
+                    $("#like-count-"+id).text(data.likes_count)
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                    $("#unlike-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#like-"+id).css('color','#95a5a6')
+                    $("#like-count-"+id).text(data.likes_count)
+                }
+            }
+        });
+    }
+
+    function unlikePost(id) {
+        $.ajax({
+            url: '{% url "post-unlike" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('UnLike')
+                    $("#unlike-"+id).css('color','#EA2027')
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                    $("#like-count-"+id).text(data.likes_count)
+                    $("#like-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#unlike-"+id).css('color','#95a5a6')
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                }
+            }
+        });
+    }
+
+    function bookmarkPost(id){
+        $.ajax({
+            url: '{% url "post-bookmark" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.bookmarked) {
+                    $('.tabcontent').children("#post-" + id).children('.card-footer').children('a').children("#bookmark-" + id).removeClass('far fa-bookmark').addClass('fas fa-bookmark');
+                    var postsDiv = $('#Posts').children("#post-" + id).html();
+                    $('#Bookmarkeds').prepend('<div id="post-' + id +'" class="card bg-light mb-3" style="max-width: 38rem;"></div>')
+                    $('#Bookmarkeds').children("#post-"+id).html(postsDiv)
+                }
+                else{
+                    $('.tabcontent').children("#post-" + id).children('.card-footer').children('a').children("#bookmark-" + id).removeClass('fas fa-bookmark').addClass('far fa-bookmark');
+                    $('#Bookmarkeds').children("#post-" + id).remove();
+                }
+            }
+        });
+    }
+
+    function openTab(evt, processName){
+        $('.tabcontent').hide();
+        $('#'+processName).show();
+        $('.navlink').removeClass(' active')
+        evt.currentTarget.className += " active";
+    }
+    document.getElementById("defaultOpen").click();
+
+
+
+
+    $(".followForm").submit(function(e){
+        e.preventDefault();
+        var this_form = $(this);
+        var username_ = this_form.children('input[name="followed"]').val()
+        var profilOwner = this_form.children('input[name="profilOwner"]').val()
+        var follower = this_form.children('input[name="follower"]').val()
+        console.log(username_)
+        var formUrl = this_form.attr('action')
+        var formMethod = this_form.attr('method')
+        var formData = this_form.serialize()
+        $.ajax({
+            url : formUrl,
+            method : formMethod,
+            type : 'json',
+            data : formData,
+            success: function(data){
+                if(data.action){
+                    if(profilOwner != follower){
+                        this_form.find(".followSubmit").val(data.msg)
+                    }
+                    else{
+                        $('#followings-count').text('('+data.followings_count+')')
+                        this_form.find(".followSubmit").val(data.msg)
+                        var copiedDiv = this_form.html()
+                        console.log(copiedDiv)
+                        $('#Followings').prepend(`
+                        <div id='helpDiv-${data.followed_username}'>
+            <div class='row' id='followings-${data.followed_username}'>
+                <div class='col-2'>
+                    <img src='${data.image_url}' class='card-img'>
+                </div>
+                <div class='col-8'>
+                    <div class='row'>
+                        <strong>${data.followed_full_name}</strong>
+                        <p class='text-muted' style="margin-left: 6px;">${data.followed_username}</p>
+                    </div>
+                </div>
+                <div class='col-2'>
+                    <form class='followForm' method='POST' action='{% url "add-or-delete-follow" %}'>
+                        {% csrf_token %}
+                        <input type='hidden' name='profilOwner' value='${data.profilOwner_username}'>
+                        <input type='hidden' name='followed' value='${data.followed_username}'>
+                        <input type='hidden' name='follower' value='${data.follower_username}'>
+                        <input class='followSubmit' style='margin-left: 5px;' type='submit' class='btn btn-success' value='UNFOLLOW'>
+                    </form>
+                </div>
+            </div><hr></div>
+    `);
+                    }
+                }
+                else{
+                    if(profilOwner != follower){
+                        this_form.find(".followSubmit").val(data.msg)
+                    }
+                    else{
+                        $('#followings-count').text('('+data.followings_count+')')
+                        this_form.find(".followSubmit").val(data.msg)
+                        $('#Followings').children('#helpDiv-'+username_).remove()
+                        $('#Followers').children('#followers-'+username_).find('.followForm').find('.followSubmit').val(data.msg)
+                    }
+                    
+                }
+            }
+        })
+    })
+
+</script>
+{% endblock %}

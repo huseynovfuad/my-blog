@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}
+
+
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+    }
+    .main{
+        position: relative;
+        background: url('/static/index.jpg/');
+        min-height: 100vh;
+        background-size: cover;
+        background-position: center;
+        padding: 220px 0 200px;
+    }
+    .content{
+        color: #f1f1f1;
+        font-weight: bold;
+        font-family: Trebuchet MS;
+    }
+    #profil_picture{
+    width:64px;
+    height:64px;
+    border:2px solid #e5e7e8;
+  }
+  .flex-column li a{
+      text-decoration: none;
+      color: #f1f1f1;
+      cursor: pointer;
+  }
+  .flex-column li a:hover{
+      color: #00a8ff;
+  }
+
+</style>
+
+
+
+
+{% endblock %}
+{% block index %}
+
+
+<section class='main'>
+    <div class='container'>
+        <div class='row'>
+            <div class='col-sm-6'>
+                <h2 class='content'>This website is created for portfolio</h2>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<br>
+
+<div class='container'>
+    <h1 style="text-align: center;font-weight: bold;"> Some Posts </h1>
+    <div class='row'>
+        {% for post in posts %}
+        <div class='col-6' style='margin-top: 20px;'>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="">{{post.title}}</h5><span class='text-muted'>posted by {{post.author.get_full_name}}</span><hr>
+                    <a href='{% url "post-detail" post.slug %}' style='text-decoration: none;color:black;'><p class="card-text">{{post.snipped_body|safe}}</p></a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<br>
+
+<div class='container'>
+    <h1 style="text-align: center;font-weight: bold;"> Some Users </h1>
+    <div class='row'>
+    {% for user in users %}
+        <div class='col-6' style='margin-top: 30px;'>
+                    <div class='header'>
+                        <div class='row'>
+                        <div class='pull-left'>
+                          <img src='{{user.profile.get_image_or_default}}' class='rounded-circle' id='profil_picture'>
+                        </div>
+                        <div class='col'>
+                            <a href='{% url "profile-view" user.username %}'><strong class='text-primary' style="margin-left: 10px;">{{user.get_full_name}}</strong></a>
+                            <p class="text-muted" style="margin-left: 10px;">{{user.profile.bio}}</p>
+                        </div>
+                        </div>
+                    </div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+
+
+<br><br>
+<footer style='padding: 60px;background-color: #2d3436;'>
+    <div class='container'>
+        <div class='row'>
+            <div class='col-7'>
+                <img src='/static/logo1.png/' style='width: 220px;height: 150px;'>
+            </div>
+            <div class='col-3'>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                      <a class="nav-link active" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Help</a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Security</a>
+                    </li>
+                </ul>
+            </div>
+            <div class='col-2'>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">Terms</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Privacy</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+
+
+
+
+{% endblock %}
+

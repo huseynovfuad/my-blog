@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}
+<style>
+	body{
+		padding: 0;
+		margin: 0;
+	}
+	#firstDiv{
+		background-image: url('/static/signup.jfif/');
+		background-size: cover;
+	}
+	.signupForm h1{
+		font-weight: bold;
+		font-family:Arial, Helvetica, sans-serif;
+	}
+	.signupForm{
+		align-items: center;
+	}
+	.signupForm input[type='text'],input[type='password'],input[type='email']{
+		color: #000;
+		width: 90%;
+		border: 0;
+		margin: 10px auto;
+		text-align: center;
+		border-bottom: 2px solid #2d3436;
+		background: none;
+		outline: none;
+		
+	}
+	.signupForm input[type='text']:focus,input[type='password']:focus,input[type='email']:focus{
+		outline: none;
+		border-bottom: 2px solid #95a5a6;
+	}
+	.signupForm input[type='submit']{
+		border: 0;
+		background: none;
+		display: block;
+		margin: 10px auto;
+		text-align: center;
+		border: 2px solid #fa8231;
+		padding: 10px 40px;
+		outline: none;
+		color: #000;
+		font-weight: bold;
+		border-radius: 24px;
+		transition: 0.25s;
+		cursor: pointer;
+	}
+	.signupForm input[type='submit']:hover{
+		background-color: #fa8231;
+		color: #f1f1f1;
+	}
+	.signupForm input[type='submit']:focus{
+		outline: none;
+	}
+	.signupForm input[type='submit']:active{
+		transform: scale(0.95);
+	}
+	.signupForm p{
+		font-size: 18px;
+		font-weight: bold;
+		font-family:Georgia, 'Times New Roman', Times, serif;
+	}
+	.signupForm p a{
+		color: #7f8c8d;
+		font-size: 18px;
+		font-weight: bold;
+		text-decoration: none;
+	}
+	.signupForm p a:hover{
+		color: #3498db;
+	}
+	.signupForm p a:active{
+		transform: scale(0.95);
+	}
+</style>
+{% endblock %}
+{% block content %}
+{% load crispy_forms_tags %}
+<br>
+
+		<div class='row'>
+			<div id='firstDiv' class='col-6'>
+			</div>
+			<div class='col-6'>
+				<div class="main-container fullscreen">
+					<div class="container">
+						<div class="row">
+							<div class="col">
+								<div class="text-center">
+									<form class='signupForm' method='POST'>
+										<h1>Create Account</h1>
+										{% csrf_token %}
+										{{form|crispy}}
+										<input type='submit' value='Sign up'>
+										<p class="text-center">Do you have any account?  <a href="{% url 'login' %}">Login</a></p>
+									</form>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+	$('input').removeClass('form-control')
+</script>
+
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load crispy_forms_tags %}
+<br>
+<form method='POST' enctype="multipart/form-data">
+    {% csrf_token %}
+    {{form|crispy}}
+    {{form.media}}
+    <div class='row'>
+            <strong style="color: #EA2027;font-size: 20px;">Note: </strong>
+            <strong style="margin-left: 10px;font-size: 20px;">Please add topic names with spaces</strong>
+            <br><br>
+    </div>
+    <button type='submit' class='btn btn-info btn-lg' style="padding: 0 40px;"><b>Save</b></button>
+</form>
+<br>
+{% endblock %}

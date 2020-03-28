@@ -1,0 +1,33 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="{% url 'post-list' %}">Navbar</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+      </ul>
+      <ul class="navbar-nav mr-auto">
+        <form class="form-inline my-2 my-lg-0">
+            <input class="form-control mr-sm-2" type="search" name='search' style="width: 380px;" placeholder="  #topics" aria-label="Search">
+            <button class="btn btn-outline-info my-2 my-sm-0" type="submit"><i class="fas fa-search"></i></button>
+        </form>
+      </ul>
+      <ul class="nav navbar-nav navbar-right" style="margin-right:90px;">
+        <li class="nav-item" style="margin-right:10px;">
+            <a class="nav-link" href="{% url 'post-create' %}"><i class="fas fa-plus-circle" style="font-size: 20px;"></i> <b>Create Topic</b></a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <img src='{{request.user.profile.get_image_or_default}}'class='rounded-circle' style="width: 32px;height: 32px;">
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a class="dropdown-item" href="{% url 'profile-view' request.user %}">Profile</a>
+            <a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i>  Logout</a>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </nav>

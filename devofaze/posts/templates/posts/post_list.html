@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% block title %}
+<title>Home Page</title>
+<style>
+    #profil_picture{
+    width:64px;
+    height:64px;
+    border:2px solid #e5e7e8;
+  }
+  @media only screen and (max-width: 600px) {
+  .col-4{
+    display: none;
+  }
+}
+</style>
+{% endblock %}
+{% block content %}<br><br>
+{% if search %}
+    {% if posts %}
+    <div style="background-color: #44bd32;padding: 5px;">
+        <a href='{% url "post-list" %}'><button type="button" class="close" aria-label="Close" style="margin-right: 4px;">
+            <span aria-hidden="true" class='text-light'>&times;</span>
+        </button></a>
+        <h4 style="color: #f1f1f1;">Posts for <u><i>{{search}}</i></u> -- {{len_posts}} results</h4>
+    </div><br>
+    {% else %}
+        <div style="text-align: center;">
+            <h4>Sorry, we can't find any posts for <u><i>{{search}}</i></u></h4>
+        </div>
+    {% endif %}   
+{% endif %}
+
+
+<div class='row'>
+    <div class='col'>
+        {% for post in posts %}
+        <div id="post-{{post.id}}" class="card bg-light mb-3" style="max-width: 38rem;">
+            <div class="card-header">
+                <div class='header'>
+                    <a class='pull-left'>
+                      <img src='{{post.author.profile.get_image_or_default}}' class='rounded-circle' id='profil_picture'>
+                    </a>
+                    <strong class='text-primary' style="margin-left: 10px;">{{post.author.get_full_name}}</strong>
+                  </div>
+                  {% if post.draft == True %}
+                    <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-dark'></i>  Last Update | {{post.updated_at|timesince}}</small>
+                  {% else %}
+                    <small class='text-muted pull-left' style="margin-left: 10px;margin-top: 5px;"><i class='fas fa-clock text-muted'></i>  {{post.created_at|timesince}} ago</small>
+                  {% endif %}
+            </div>
+            <div class="card-body">
+                    <h5 style='float:left;' class="card-title">{{post.title}}</h5>
+                    {% if request.user == post.author %}
+                    <div style="float:right;">
+                        <a class='text-info' href='{% url "post-edit" post.slug %}' style="margin-right: 8px;"><i class="fas fa-pen"></i></a>  
+                        <a onClick="deletePost({{post.id}})" style="color:#e67e22;cursor:pointer;"><i class="fas fa-trash-alt"></i></a>        
+                    </div>
+                    
+                    {% endif %}<br><hr>
+                    <a href='{% url "post-detail" post.slug %}' style='text-decoration: none;color:black;'>
+                    {% if post.image %}
+                        <center><img src="{{post.image.url}}" class='card-img' style="height: 200px;"></center>
+                    {% endif %}
+                        <p class="card-text">{{post.snipped_body|safe}}</p>
+                     </a>
+            </div>
+            <div class="card-footer">
+                <a onClick="bookmarkPost({{post.id}})" style="color:black;cursor: pointer;">
+                {% if request.user in post.bookmark.all %}
+                    <i id='bookmark-{{post.id}}' class="fas fa-bookmark"></i>
+                {% else %}
+                    <i id='bookmark-{{post.id}}' class="far fa-bookmark"></i>
+                {% endif %}
+                </a>
+                <div id='post-like-{{post.id}}' style="float: right;">
+                    <a style="margin-right: 7px;"><i class="far fa-eye"></i>  <strong>{{post.total_reads}}</strong></a>
+                    <a  id='postBtn-like' onClick="likePost({{post.id}})" style="cursor: pointer;margin-right: 5px;">
+                        {% if request.user in post.likes.all %}
+                          <i id='like-{{post.id}}' class="fas fa-heart" style="color: #EA2027;"></i> 
+                        {% else %}
+                          <i id='like-{{post.id}}' class="fas fa-heart" style="color: #95a5a6;"></i>
+                        {% endif %}
+                        <b><span id='like-count-{{post.id}}'>{{post.total_likes}}</span></b>
+                      </a>
+                      <a  id='postBtn-unlike' onClick="unlikePost({{post.id}})" style="cursor: pointer;">
+                        {% if request.user in post.unlikes.all %}
+                          <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #EA2027;"></i> 
+                        {% else %}
+                          <i id='unlike-{{post.id}}' class="fas fa-heart-broken" style="color: #95a5a6;"></i>
+                        {% endif %}
+                        <b><span id='unlike-count-{{post.id}}'>{{post.total_unlikes}}</span></b>
+                      </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% if p.num_pages > 1 %}
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-center">
+              {% if posts.has_previous %}
+                <li class="page-item"><a class="page-link bg-dark text-light" href="?page={{ posts.previous_page_number }}"><i class="fas fa-backward"></i></a></li>
+              {% endif %}
+              {% for i in posts.paginator.page_range %}
+                {% if posts.number == i %}
+                  <li class="page-item active"><a class="page-link" href="?page={{i}}">{{i}}</a></li>
+                {% elif posts.number != i %}
+                  <li class="page-item"><a class="page-link" href="?page={{i}}{% if search %}&search={{search}}{% endif %}">{{i}}</a></li>
+                {% endif %}
+              {% endfor %}
+              {% if posts.has_next %}
+                <li class="page-item"><a class="page-link bg-dark text-light" href="?page={{ posts.next_page_number }}"><i class="fas fa-forward"></i></a></li>
+              {% endif %}
+            </ul>
+          </nav>
+          {% endif %}
+    </div>
+
+
+
+    {% if posts %}
+    <div class='col-4'>
+        <center>
+        <h3>Popular posts</h3><br>
+            {% for popular_post in popular_posts %}
+                <a href='{% url "post-detail" popular_post.slug %}'><h5>{{popular_post.title}}</h5></a>
+            {% endfor %}
+        <br>
+        </center>
+    </div>
+</div>
+    {% endif %}
+
+
+
+
+{% endblock %}
+{% block javascript %}
+
+<script>
+
+
+    function deletePost(id) {
+        $.ajax({
+            url: '{% url "post-delete" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.deleted) {
+                $("#post-" + id).remove();
+                }
+            }
+        });
+    }
+
+
+    function likePost(id) {
+        $.ajax({
+            url: '{% url "post-like" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('Like')
+                    $("#like-"+id).css('color','#EA2027')
+                    $("#like-count-"+id).text(data.likes_count)
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                    $("#unlike-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#like-"+id).css('color','#95a5a6')
+                    $("#like-count-"+id).text(data.likes_count)
+                }
+            }
+        });
+    }
+
+    function unlikePost(id) {
+        $.ajax({
+            url: '{% url "post-unlike" %}',
+            method: 'GET',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if(data.liked){
+                    console.log('UnLike')
+                    $("#unlike-"+id).css('color','#EA2027')
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                    $("#like-count-"+id).text(data.likes_count)
+                    $("#like-"+id).css('color','#95a5a6')
+                }
+                else{
+                    console.log("Zero")
+                    $("#unlike-"+id).css('color','#95a5a6')
+                    $("#unlike-count-"+id).text(data.unlikes_count)
+                }
+            }
+        });
+    }
+
+    function bookmarkPost(id){
+        $.ajax({
+            url: '{% url "post-bookmark" %}',
+            data: {
+                'id': id,
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.bookmarked) {
+                    $("#bookmark-" + id).removeClass('far fa-bookmark').addClass('fas fa-bookmark');
+                }
+                else{
+                    $("#bookmark-" + id).removeClass('fas fa-bookmark').addClass('far fa-bookmark');
+                }
+            }
+        });
+    }
+</script>
+
+
+
+{% endblock %}

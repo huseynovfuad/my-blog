@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load crispy_forms_tags %}
+<form method='POST'>
+    {% csrf_token %}
+    {{form|crispy}}
+    {{form.media}}
+    <input type='submit' value='Save changes' class='btn btn-info text-light'>
+</form>
+{% endblock %}

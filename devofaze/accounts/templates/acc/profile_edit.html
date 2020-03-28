@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+
+
+{% block title %}
+
+
+{% endblock %}
+
+
+
+{% block content %}
+{% load crispy_forms_tags %}
+{% load bootstrap4 %}
+{% bootstrap_css %}
+{% bootstrap_javascript jquery='full' %}
+
+<br>
+<div class='row'>
+    <div class="modal fade" id="modal-progress" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title">Uploading...</h4>
+            </div>
+            <div class="modal-body">
+              <div class="progress">
+                <div class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <div class='col-2'></div>
+    <div class='col-8'>
+		<form method="POST" enctype="multipart/form-data">
+			<h1>User Edit Profile</h1>
+            {% csrf_token %}
+            <div class='row'>
+                <div class='col-4'></div>
+                <div class='col-4'>
+                    <img src='{{user.profile.get_image_or_default}}' class='rounded-circle' style='width: 230px;height: 200px;border: solid black 3px;'>
+                    <br><br>
+                    <button type="button" class="btn btn-primary btn-lg-3 js-upload-photos">
+                        <span class="glyphicon glyphicon-cloud-upload"></span> Upload photos
+                    </button>
+                    <input id="fileupload" type="file" name="photo" multiple
+                             style="display: none;"
+                             data-url="{% url 'profile-photo' %}"
+                             data-form-data='{"csrfmiddlewaretoken": "{{ csrf_token }}"}'>
+                </div>
+                <div class='col-4'></div>
+            </div>
+            <br><br>
+
+
+            {{user_form|crispy}}
+                    
+            {{profile_form|crispy}}
+            {{profile_form.media}}
+
+
+			<input class='btn btn-success' type='submit' value='Save changes'>
+		</form>
+    </div>
+    <div class='col-2'></div>
+</div>
+<br>
+
+
+
+
+
+
+{% endblock %}
+
+{% block javascript %}
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+<script src="/static/upload_js/vendor/jquery.ui.widget.js/"></script>
+<script src="/static/upload_js/jquery.iframe-transport.js/"></script>
+<script src="/static/upload_js/jquery.fileupload.js/"></script>
+<script src="/static/upload_js/basic_upload.js/"></script>
+
+
+
+
+
+{% endblock %}
