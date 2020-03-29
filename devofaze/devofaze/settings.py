@@ -151,7 +151,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 
 EMAIL_HOST_USER = 'fuadhuseynov102@gmail.com'
 
-EMAIL_HOST_PASSWORD = 'prostafuad999'
+EMAIL_HOST_PASSWORD = ''
 
 EMAIL_PORT = 465
 
